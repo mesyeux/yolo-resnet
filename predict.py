@@ -16,8 +16,7 @@ img_float = cv2.resize(img, (224,224)).astype(np.float32)
 img_float -= 128
 
 img_in = np.expand_dims(img_float, axis=0)
-
-model = ResNet50(include_top=False, load_weight=True, weights='models/rerun9_0.01_weights.02-2.05.hdf5',
+model = ResNet50(include_top=False, load_weight=True, weights='models/run1_0.01_weights.06-5.33.hdf5',
                 input_shape=(224,224,3))
 pred = model.predict(img_in)
 

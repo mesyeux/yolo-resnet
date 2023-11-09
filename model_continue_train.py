@@ -26,14 +26,14 @@ from keras.layers import BatchNormalization
 from keras.models import Model
 from keras.preprocessing import image
 import keras.backend as K
-from keras.utils import layer_utils
-from keras.utils.data_utils import get_file
-from keras.applications.imagenet_utils import decode_predictions
-from keras.applications.imagenet_utils import preprocess_input
-from keras.applications.imagenet_utils import _obtain_input_shape
-from keras.engine.topology import get_source_inputs
-from keras.callbacks import ModelCheckpoint
-from keras.optimizers import Adam
+from tensorflow.python.keras.utils import layer_utils 
+from tensorflow.python.keras.utils.data_utils import get_file
+from tensorflow.keras.applications.imagenet_utils import decode_predictions
+from tensorflow.keras.applications.imagenet_utils import preprocess_input
+from keras_applications.imagenet_utils import _obtain_input_shape
+from tensorflow.keras.utils import get_source_inputs
+from tensorflow.python.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.optimizers import Adam
 
 ### Below base code for the ResNet50 model is taken from https://github.com/fchollet/deep-learning-models.git
 ### it has been modified to have YOLO classifier in the end layers (see ResNet50() function)
@@ -242,7 +242,7 @@ def ResNet50(include_top=False, load_weight=True, weights='imagenet',
         # C: classes: 3
         # Coords: x, y, w, h per box: 4
         # tensor length: SS * (C +B(5) ) : 363--242--968 => 1573
-        x = Dense(11*11*(3+2*5), activation='linear', name='yolo_clf_3')(x)
+        x = Dense(11*11*(2+2*5), activation='linear', name='yolo_clf_3')(x)
 
 
     # Ensure that the model takes into account
@@ -258,13 +258,16 @@ def ResNet50(include_top=False, load_weight=True, weights='imagenet',
     if load_weight:
         if weights == 'imagenet':
             if include_top:
-                weights_path = 'models/resnet50_weights_tf_dim_ordering_tf_kernels.h5'
+                weights_path = 'C:/Users/Royst/OneDrive/Documents/YOLO_ResNet/YOLO_ResNet/models/resnet50_weights_tf_dim_ordering_tf_kernels.h5'
+                # weights_path = 'https://github.com/fchollet/deep-learning-models/releases/download/v0.2/resnet50_weights_tf_dim_ordering_tf_kernels.h5'
             else:
-                weights_path = 'models/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5'
+                weights_path = 'C:/Users/Royst/OneDrive/Documents/YOLO_ResNet/YOLO_ResNet/models/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5'
+                # weights_path = 'https://github.com/fchollet/deep-learning-models/releases/download/v0.2/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5''https://github.com/fchollet/deep-learning-models/releases/download/v0.2/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5'
         else:
             weights_path = weights
         # print(weights_path, '\n', save_prefix, '\n', learning_rate)
         # sys.exit()
+        weights_path = 'C:/Users/Royst/OneDrive/Documents/YOLO_ResNet/YOLO_ResNet/models/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5'
         model.load_weights(weights_path, by_name=True)
         if K.backend() == 'theano':
             layer_utils.convert_all_kernels_in_model(model)
@@ -491,6 +494,26 @@ def coord_translate(bboxes, tr_x, tr_y):
         coords = coords.tolist()
         new_list.append((coords, box[1]))
     return new_list
+# def coord_translate(bboxes, tr_x, tr_y):
+#     '''
+#     Takes a singl frame's bounding box list with confidence scores and
+#     applies translation (addition) to the coordinates specified by 'tr'
+
+#     parameters:
+#     bboxes: list with element of the form ((x1,y1), (x2,y2)), (c1,c2,c3)
+#     tr_x, tr_y: translation factor to add the coordinates to, for x and y respectively
+
+#     returns: new list with translated coordinates and same conf scores; same shape as bboxes
+#     '''
+#     new_list = []
+#     for box in bboxes:
+#         coords = np.array(box[0])
+#         coords[:,0] = coords[:,0] + tr_x
+#         coords[:,1] = coords[:,1] + tr_y
+#         coords = coords.tolist()
+#         new_list.append((coords, box[1]))
+#     return new_list
+
 def coord_scale(bboxes, sc):
     '''
     Takes a singl frame's bounding box list with confidence scores and
@@ -513,7 +536,30 @@ def coord_scale(bboxes, sc):
         coords = coords.tolist()
         new_list.append((coords, box[1]))
     return new_list
-def label_to_tensor(frame, imgsize=(224, 224), gridsize=(11,11), classes=3, bboxes=2):
+# def coord_scale(bboxes, sc):
+#     '''
+#     Takes a singl frame's bounding box list with confidence scores and
+#     applies scaling to the coordinates specified by sc
+
+#     parameters:
+#     bboxes: list with element of the form ((x1,y1), (x2,y2)), (c1,c2,c3)
+#     sc: scaling factor to multiply the coordinates with
+
+#     returns: new list with scaled coordinates and same conf scores; same shape as bboxes
+#     '''
+#     new_list = []
+#     for box in bboxes:
+#         coords = np.array(box[0])
+#         coords = coords * sc
+#         coords = coords.astype(np.int64)
+#         out_of_bound_indices = coords[0,:]>224
+#         if out_of_bound_indices.any():
+#             continue
+#         coords = coords.tolist()
+#         new_list.append((coords, box[1]))
+#     return new_list
+
+def label_to_tensor(frame, imgsize=(224, 224), gridsize=(11,11), classes=2, bboxes=2):
     '''
     This function takes in the frame (rows corresponding to a single image in the labels.csv)
     and converts it into the format our network expects (coord conversion and normalization)
@@ -529,11 +575,16 @@ def label_to_tensor(frame, imgsize=(224, 224), gridsize=(11,11), classes=3, bbox
     dims = np.zeros((gridsize[0], gridsize[1], bboxes, 4))
 
     for box in frame:
-        ((x1,y1), (x2,y2)), (c1,c2,c3) = box
+        ((x1,y1), (x2,y2)), (c1,c2) = box
         x_grid = int(((x1+x2)/2)//x_span)
         y_grid = int(((y1+y2)/2)//y_span)
+        # print("x_grid:", x_grid)
+        # print("y_grid:", y_grid)
+        
+        if (x_grid >= 11 or y_grid >= 11):
+            continue
 
-        class_prob[y_grid, x_grid] = (c1,c2,c3)
+        class_prob[y_grid, x_grid] = (c1,c2)
 
         x_center = ((x1+x2)/2)
         y_center = ((y1+y2)/2)
@@ -553,7 +604,8 @@ def label_to_tensor(frame, imgsize=(224, 224), gridsize=(11,11), classes=3, bbox
 
     tensor = np.concatenate((class_prob.ravel(), confidence.ravel(), dims.ravel()))
     return tensor
-def augument_data(label, frame, imgsize=(224, 224), folder='udacity-object-detection-crowdai/'):
+
+def augument_data(label, frame, imgsize=(224, 224), folder='Dataset/clean_dataset/'):
     '''
     Takes the image file name and the frame (rows corresponding to a single image in the labels.csv)
     and randomly scales, translates, adjusts SV values in HSV space for the image,
@@ -602,10 +654,70 @@ def augument_data(label, frame, imgsize=(224, 224), folder='udacity-object-detec
         frame = coord_scale(frame, sc)
 
     return img, frame
+    
+    # YEEEET
+    
+    # img = cv2.imread(folder+label)
+    # img = cv2.resize(img, imgsize)
+    # rows, cols = img.shape[:2]
+
+    # #translate_factor
+    # tr = np.random.random() * 0.2
+    # print("tr")
+    # print(tr)
+    # # tr_y = np.random.randint(rows*-tr,rows*tr)
+    # tr_y = np.random.uniform(-rows * abs(tr), rows * abs(tr))
+    # print("tr_y")
+    # print(tr_y)
+    # # tr_x = np.random.randint(cols*-tr, cols*tr)
+    # tr_x = np.random.uniform(-cols * abs(tr), cols * abs(tr))
+    # print("tr_x")
+    # print(tr_x)
+    # #scale_factor
+    # sc = np.random.random() * 0.4 + 0.8
+
+    # # flip coin to adjust image saturation
+    # r = np.random.rand()
+    # if r < 0.5:
+    #     #randomly adjust the S and V values in HSV representation
+    #     img = cv2.cvtColor(img, cv2.COLOR_RGB2HSV).astype(np.float32)
+    #     fs = np.random.random() + 0.7
+    #     fv = np.random.random() + 0.2
+    #     img[:,:,1] *= fs
+    #     img[:,:,2] *= fv
+    #     img = img.astype(np.uint8)
+    #     img = cv2.cvtColor(img, cv2.COLOR_HSV2RGB)
+    #     print('adjusted SV: {}, {}'.format(fs, fv))
+
+    # # new random factor for scaling and translating
+    # r = np.random.rand()
+
+    # if r < 0.3:
+    #     #translate image
+    #     M = np.float32([[1,0,tr_x], [0,1,tr_y]])
+    #     img = cv2.warpAffine(img, M, (cols,rows))
+    #     frame = coord_translate(frame, tr_x, tr_y)
+    #     print('translating by: {}, {}'.format(tr_x, tr_y))
+    # elif r < 0.6:
+    #     #scale image keeping the same size
+    #     placeholder = np.zeros_like(img)
+    #     meta = cv2.resize(img, (0,0), fx=sc, fy=sc)
+    #     if sc < 1:
+    #         placeholder[:meta.shape[0], :meta.shape[1]] = meta
+    #     else:
+    #         placeholder = meta[:placeholder.shape[0], :placeholder.shape[1]]
+    #     img = placeholder
+    #     frame = coord_scale(frame, sc)
+    #     print('scaled by: {}'.format(sc))
+
+    # return img, frame
+    
+    # YEEEEET
+    
 #-----------------------------------------------------------------------#
 
 ### Define generator and Import dataset (do test/train split)
-def generator(label_keys, label_frames, batch_size=64, folder='udacity-object-detection-crowdai/'):
+def generator(label_keys, label_frames, batch_size=64, folder='Dataset/clean_dataset/'):
     '''
     Generator function
     # Arguments
@@ -671,7 +783,7 @@ if __name__ == '__main__':
         weights_path = sys.argv[1]
 
     model = ResNet50(include_top=False, input_shape=(224,224,3),
-                    load_weight=True, weights=weights_path)
+                    load_weight=True, weights='weights_path')
 
     with open('label_frames.p', 'rb') as f:
         label_frames = pickle.load(f)
