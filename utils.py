@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 from scipy.special import expit as sigmoid
+from scipy.special import softmax
 
 def draw_boxes(img, bboxes_w_conf, color=(0, 0, 255), thick=2, draw_dot=False, radius=7):
     # Make a copy of the image
@@ -16,7 +17,7 @@ def draw_boxes(img, bboxes_w_conf, color=(0, 0, 255), thick=2, draw_dot=False, r
     # Return the image copy with boxes drawn
     return draw_img
 
-def get_boxes(nn_output, cutoff=0.2, dims=(1920, 1200)):
+def get_boxes(nn_output, cutoff=0.2, class_index=0, dims=(1920, 1200)):
     '''
     Extracts boxes from the network prediction with greater confidence score that 'cutoff'
     # Arguments
@@ -90,6 +91,7 @@ def get_boxes(nn_output, cutoff=0.2, dims=(1920, 1200)):
         bboxes.append(((x1,y1), (x2,y2), conf_scores[a,b,c]))
 
     return bboxes
+
 
 def nonmax_suppression(bboxes, iou_cutoff = 0.05):
     '''

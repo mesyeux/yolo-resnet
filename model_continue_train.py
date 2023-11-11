@@ -242,7 +242,7 @@ def ResNet50(include_top=False, load_weight=True, weights='imagenet',
         # C: classes: 3
         # Coords: x, y, w, h per box: 4
         # tensor length: SS * (C +B(5) ) : 363--242--968 => 1573
-        x = Dense(11*11*(2+2*5), activation='linear', name='yolo_clf_3')(x)
+        x = Dense(11*11*(1+2*5), activation='linear', name='yolo_clf_3')(x)
 
 
     # Ensure that the model takes into account
@@ -258,16 +258,16 @@ def ResNet50(include_top=False, load_weight=True, weights='imagenet',
     if load_weight:
         if weights == 'imagenet':
             if include_top:
-                weights_path = 'C:/Users/Royst/OneDrive/Documents/YOLO_ResNet/YOLO_ResNet/models/resnet50_weights_tf_dim_ordering_tf_kernels.h5'
+                weights_path = 'C:/Users/KTLau/Downloads/YOLO_ResNet/YOLO_ResNet/models/resnet50_weights_tf_dim_ordering_tf_kernels.h5'
                 # weights_path = 'https://github.com/fchollet/deep-learning-models/releases/download/v0.2/resnet50_weights_tf_dim_ordering_tf_kernels.h5'
             else:
-                weights_path = 'C:/Users/Royst/OneDrive/Documents/YOLO_ResNet/YOLO_ResNet/models/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5'
+                weights_path = 'C:/Users/KTLau/Downloads/YOLO_ResNet/YOLO_ResNet/models/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5'
                 # weights_path = 'https://github.com/fchollet/deep-learning-models/releases/download/v0.2/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5''https://github.com/fchollet/deep-learning-models/releases/download/v0.2/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5'
         else:
             weights_path = weights
         # print(weights_path, '\n', save_prefix, '\n', learning_rate)
         # sys.exit()
-        weights_path = 'C:/Users/Royst/OneDrive/Documents/YOLO_ResNet/YOLO_ResNet/models/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5'
+        weights_path = 'C:/Users/KTLau/Downloads/YOLO_ResNet/YOLO_ResNet/models/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5'
         model.load_weights(weights_path, by_name=True)
         if K.backend() == 'theano':
             layer_utils.convert_all_kernels_in_model(model)
@@ -559,7 +559,7 @@ def coord_scale(bboxes, sc):
 #         new_list.append((coords, box[1]))
 #     return new_list
 
-def label_to_tensor(frame, imgsize=(224, 224), gridsize=(11,11), classes=2, bboxes=2):
+def label_to_tensor(frame, imgsize=(224, 224), gridsize=(11,11), classes=1, bboxes=2):
     '''
     This function takes in the frame (rows corresponding to a single image in the labels.csv)
     and converts it into the format our network expects (coord conversion and normalization)
@@ -575,7 +575,7 @@ def label_to_tensor(frame, imgsize=(224, 224), gridsize=(11,11), classes=2, bbox
     dims = np.zeros((gridsize[0], gridsize[1], bboxes, 4))
 
     for box in frame:
-        ((x1,y1), (x2,y2)), (c1,c2) = box
+        ((x1,y1), (x2,y2)), c1 = box
         x_grid = int(((x1+x2)/2)//x_span)
         y_grid = int(((y1+y2)/2)//y_span)
         # print("x_grid:", x_grid)
@@ -584,7 +584,7 @@ def label_to_tensor(frame, imgsize=(224, 224), gridsize=(11,11), classes=2, bbox
         if (x_grid >= 11 or y_grid >= 11):
             continue
 
-        class_prob[y_grid, x_grid] = (c1,c2)
+        class_prob[y_grid, x_grid] = c1
 
         x_center = ((x1+x2)/2)
         y_center = ((y1+y2)/2)
